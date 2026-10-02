@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Invoice Simulator</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; background: #f2f4f7; color: #1d2733; font-size: 15px; }
+  h1, h2, h3 { margin: 0 0 12px; }
+  button, input, select { font: inherit; }
+  input, select { padding: 8px 10px; border: 1px solid #aab4c0; border-radius: 4px; background: #fff; width: 100%; }
+  label { display: block; font-weight: 600; margin-bottom: 4px; }
+  .field { margin-bottom: 14px; }
+  .err { color: #b42318; font-size: 13px; margin-top: 4px; min-height: 0; }
+  .invalid { border-color: #b42318; }
+  .btn { padding: 9px 18px; border-radius: 4px; border: 1px solid #1f4e8c; background: #1f4e8c; color: #fff; cursor: pointer; font-weight: 600; }
+  .btn:hover { background: #173d6e; }
+  .btn.secondary { background: #fff; color: #1f4e8c; }
+  .banner { padding: 10px 14px; border-radius: 4px; margin-bottom: 14px; }
+  .banner.error { background: #fdecea; border: 1px solid #f1b0aa; color: #8a1c12; }
+  .banner.success { background: #e7f6ec; border: 1px solid #9bd3ae; color: #14532d; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; letter-spacing: .03em; }
+  .badge.CREATED { background: #e5e7eb; color: #374151; }
+  .badge.PROCESSING { background: #fff3cd; color: #7a5200; }
+  .badge.APPROVED { background: #d1f0dc; color: #14532d; }
+  .empty { color: #667085; font-style: italic; }
+  .linkbtn { background: none; border: none; color: #1f4e8c; text-decoration: underline; cursor: pointer; padding: 0; font-weight: 600; }
+
+  /* Demo controls: deliberately different from the app itself */
+  #demo { background: #fffbe6; border-bottom: 2px dashed #c9a400; padding: 8px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 18px; }
+  #demo .tag { font-size: 12px; font-weight: 700; color: #7a5f00; text-transform: uppercase; letter-spacing: .05em; }
+  #demo .seg { display: inline-flex; border: 1px solid #7a5f00; border-radius: 4px; overflow: hidden; }
+  #demo .seg button { border: none; background: #fff; padding: 6px 16px; cursor: pointer; font-weight: 700; }
+  #demo .seg button[aria-pressed="true"] { background: #7a5f00; color: #fff; }
+  #demo .reset { border: 1px solid #b42318; background: #fff; color: #b42318; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+
+  /* ===== V1 ===== */
+  .v1 header { background: #1f2d3d; color: #fff; padding: 14px 20px; font-size: 20px; font-weight: 700; }
+  .v1 main { max-width: 900px; margin: 20px auto; padding: 0 20px; }
+  .v1 .panel { background: #fff; border: 1px solid #d5dbe3; border-radius: 6px; padding: 20px; margin-bottom: 20px; }
+  .v1 form { max-width: 420px; }
+  .v1 .actions { text-align: right; }
+  .v1 table { width: 100%; border-collapse: collapse; }
+  .v1 th, .v1 td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #e3e7ed; }
+  .v1 th { background: #f2f4f7; font-size: 13px; }
+  .v1 td.num, .v1 th.num { text-align: right; }
+  .v1 dl { display: grid; grid-template-columns: 160px 1fr; gap: 6px 12px; margin: 0; }
+  .v1 dt { font-weight: 600; color: #475467; }
+  .v1 dd { margin: 0; }
+
+  /* ===== V2 ===== */
+  .v2 .shell { display: flex; min-height: calc(100vh - 50px); }
+  .v2 nav { width: 210px; background: #0f3d3e; color: #fff; padding: 20px 0; flex-shrink: 0; }
+  .v2 nav .brand { padding: 0 20px 18px; font-size: 18px; font-weight: 700; }
+  .v2 nav button { display: block; width: 100%; text-align: left; background: none; border: none; color: #cfe5e5; padding: 12px 20px; cursor: pointer; font-size: 15px; border-left: 4px solid transparent; }
+  .v2 nav button[aria-current="page"] { background: #165254; color: #fff; border-left-color: #5eead4; font-weight: 700; }
+  .v2 .content { flex: 1; padding: 24px 32px; min-width: 0; }
+  .v2 .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .v2 .topbar h1 { margin: 0; }
+  .v2 .section { background: #fff; border: 1px solid #d5dbe3; border-radius: 10px; padding: 16px 20px 6px; margin-bottom: 16px; }
+  .v2 .section h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: #0f6b6d; }
+  .v2 .row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 16px; }
+  .v2 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+  .v2 .card { background: #fff; border: 1px solid #d5dbe3; border-left: 6px solid #9ca3af; border-radius: 8px; padding: 14px; text-align: left; cursor: pointer; width: 100%; }
+  .v2 .card.APPROVED { border-left-color: #16a34a; }
+  .v2 .card.PROCESSING { border-left-color: #f59e0b; }
+  .v2 .card .big { font-size: 20px; font-weight: 700; margin: 6px 0; }
+  .v2 .card .sub { color: #475467; margin-bottom: 8px; }
+  .v2 .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 340px; background: #fff; border-left: 1px solid #c3ccd6; box-shadow: -6px 0 18px rgba(0,0,0,.12); padding: 24px; overflow: auto; z-index: 5; }
+  .v2 .drawer .close { float: right; }
+  .v2 .detail-item { padding: 10px 0; border-bottom: 1px solid #e3e7ed; }
+  .v2 .detail-item small { display: block; color: #667085; text-transform: uppercase; font-size: 11px; letter-spacing: .05em; }
+</style>
+</head>
+<body>
+<div id="demo" role="region" aria-label="Demo controls">
+  <span class="tag">Demo controls (not part of the application)</span>
+  <span>UI Version:
+    <span class="seg" role="group" aria-label="UI Version">
+      <button id="btn-v1" type="button" aria-pressed="false">V1</button>
+      <button id="btn-v2" type="button" aria-pressed="false">V2</button>
+    </span>
+  </span>
+  <button id="btn-reset" class="reset" type="button">Reset test data</button>
+  <span id="demo-msg" role="status"></span>
+</div>
+<div id="root"></div>
+
+<script>
+const CURRENCIES = ['SEK', 'EUR', 'DKK', 'NOK'];
+const state = { ui: 'v1', invoices: [], selectedId: null, tab: 'create', errors: {}, banner: null, form: {} };
+let pollTimer = null;
+
+// ---------- helpers ----------
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = (n) => Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const badge = (s) => `<span class="badge ${s}">${s}</span>`;
+const sel = () => state.invoices.find((i) => i.id === state.selectedId);
+
+async function api(method, url, body) {
+  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  let data = null;
+  try { data = await res.json(); } catch (e) {}
+  return { ok: res.ok, status: res.status, data };
+}
+
+function readForm() {
+  const f = $('invoice-form');
+  if (!f) return;
+  ['customer', 'invoiceNumber', 'amount', 'currency', 'dueDate'].forEach((k) => { state.form[k] = f.elements[k].value; });
+}
+
+// ---------- field markup (labels differ per version) ----------
+const LABELS = {
+  v1: { customer: 'Customer', invoiceNumber: 'Invoice number', amount: 'Amount', currency: 'Currency', dueDate: 'Due date' },
+  v2: { customer: 'Client', invoiceNumber: 'Invoice #', amount: 'Amount', currency: 'Currency', dueDate: 'Payment due by' }
+};
+function field(k) {
+  const label = LABELS[state.ui][k];
+  const v = state.form[k] ?? (k === 'currency' ? 'SEK' : '');
+  const err = state.errors[k];
+  let control;
+  if (k === 'currency') {
+    control = `<select id="f-${k}" name="${k}">${CURRENCIES.map((c) => `<option value="${c}"${c === v ? ' selected' : ''}>${c}</option>`).join('')}</select>`;
+  } else if (k === 'dueDate') {
+    control = `<input id="f-${k}" name="${k}" type="date" value="${esc(v)}"${err ? ' class="invalid"' : ''}>`;
+  } else {
+    control = `<input id="f-${k}" name="${k}" type="text" autocomplete="off" value="${esc(v)}"${err ? ' class="invalid"' : ''}>`;
+  }
+  return `<div class="field"><label for="f-${k}">${label}</label>${control}<div class="err" id="e-${k}">${err ? esc(err) : ''}</div></div>`;
+}
+
+// ---------- V1 layout ----------
+function shellV1() {
+  return `<div class="v1">
+    <header>Invoice Portal</header>
+    <main>
+      <section class="panel">
+        <h2>Create Invoice</h2>
+        <div id="banner"></div>
+        <form id="invoice-form" novalidate>
+          ${['customer', 'invoiceNumber', 'amount', 'currency', 'dueDate'].map(field).join('')}
+          <div class="actions"><button class="btn" type="submit">Create Invoice</button></div>
+        </form>
+      </section>
+      <section class="panel"><h2>Invoices</h2><div id="list"></div></section>
+      <section class="panel"><h2>Invoice Details</h2><div id="details"></div></section>
+    </main></div>`;
+}
+function listV1() {
+  if (!state.invoices.length) return '<p class="empty">No invoices yet.</p>';
+  return `<table><thead><tr><th>Invoice number</th><th>Customer</th><th class="num">Amount</th><th>Currency</th><th>Status</th></tr></thead><tbody>
+    ${state.invoices.map((i) => `<tr><td><button class="linkbtn" data-open="${i.id}">${esc(i.invoiceNumber)}</button></td><td>${esc(i.customer)}</td><td class="num">${money(i.amount)}</td><td>${i.currency}</td><td>${badge(i.status)}</td></tr>`).join('')}
+    </tbody></table>`;
+}
+function detailsV1() {
+  const i = sel();
+  if (!i) return '<p class="empty">Click an invoice number in the list to see its details.</p>';
+  return `<dl><dt>Invoice number</dt><dd>${esc(i.invoiceNumber)}</dd><dt>Customer</dt><dd>${esc(i.customer)}</dd>
+    <dt>Amount</dt><dd>${money(i.amount)}</dd><dt>Currency</dt><dd>${i.currency}</dd><dt>Due date</dt><dd>${esc(i.dueDate)}</dd>
+    <dt>Status</dt><dd>${badge(i.status)}</dd></dl>`;
+}
+
+// ---------- V2 layout ----------
+function shellV2() {
+  const create = state.tab === 'create';
+  return `<div class="v2"><div class="shell">
+    <nav aria-label="Main navigation"><div class="brand">InvoiceHub</div>
+      <button type="button" data-tab="create"${create ? ' aria-current="page"' : ''}>+ New Invoice</button>
+      <button type="button" data-tab="list"${!create ? ' aria-current="page"' : ''}>All Invoices</button>
+    </nav>
+    <div class="content">
+      ${create ? `
+      <form id="invoice-form" novalidate>
+        <div class="topbar"><h1>New Invoice</h1><button class="btn" type="submit">Submit Invoice</button></div>
+        <div id="banner"></div>
+        <div class="section"><h3>Customer Details</h3>${field('customer')}</div>
+        <div class="section"><h3>Invoice Details</h3>
+          <div class="row">${field('invoiceNumber')}${field('dueDate')}${field('amount')}${field('currency')}</div>
+        </div>
+      </form>` : `
+      <div class="topbar"><h1>All Invoices</h1></div>
+      <div id="banner"></div>
+      <div id="list"></div>`}
+    </div>
+    <div id="details"></div>
+  </div></div>`;
+}
+function listV2() {
+  if (!state.invoices.length) return '<p class="empty">No invoices yet. Use "+ New Invoice" to add one.</p>';
+  return `<div class="cards">${state.invoices.map((i) => `<button type="button" class="card ${i.status}" data-open="${i.id}">
+    ${badge(i.status)}<div class="big">${money(i.amount)} ${i.currency}</div>
+    <div class="sub">${esc(i.customer)}</div><div><strong>${esc(i.invoiceNumber)}</strong></div></button>`).join('')}</div>`;
+}
+function detailsV2() {
+  const i = sel();
+  if (!i) return '';
+  const item = (t, v) => `<div class="detail-item"><small>${t}</small>${v}</div>`;
+  return `<aside class="drawer" aria-label="Invoice details"><button class="btn secondary close" type="button" id="close-details">Close</button>
+    <h2>Invoice ${esc(i.invoiceNumber)}</h2>
+    ${item('Status', badge(i.status))}${item('Client', esc(i.customer))}${item('Invoice #', esc(i.invoiceNumber))}
+    ${item('Amount', money(i.amount) + ' ' + i.currency)}${item('Payment due by', esc(i.dueDate))}</aside>`;
+}
+
+// ---------- rendering ----------
+function renderBanner() {
+  const b = $('banner');
+  if (!b) return;
+  b.innerHTML = state.banner ? `<div class="banner ${state.banner.type}" role="${state.banner.type === 'error' ? 'alert' : 'status'}">${esc(state.banner.text)}</div>` : '';
+}
+function renderData() {
+  const l = $('list'), d = $('details');
+  if (l) l.innerHTML = state.ui === 'v1' ? listV1() : listV2();
+  if (d) d.innerHTML = state.ui === 'v1' ? detailsV1() : detailsV2();
+  renderBanner();
+}
+function renderAll(skipRead) {
+  if (!skipRead) readForm();
+  $('root').innerHTML = state.ui === 'v1' ? shellV1() : shellV2();
+  $('btn-v1').setAttribute('aria-pressed', state.ui === 'v1');
+  $('btn-v2').setAttribute('aria-pressed', state.ui === 'v2');
+  renderData();
+}
+
+// ---------- actions ----------
+async function refresh() {
+  const r = await api('GET', '/api/invoices');
+  if (r.ok) { state.invoices = r.data; renderData(); }
+  const pending = state.invoices.some((i) => i.status !== 'APPROVED');
+  clearTimeout(pollTimer);
+  pollTimer = setTimeout(refresh, pending ? 700 : 3000);
+}
+
+function setUi(v) {
+  readForm();
+  state.ui = v;
+  try { localStorage.setItem('ui', v); } catch (e) {}
+  const u = new URL(location.href); u.searchParams.set('ui', v); history.replaceState(null, '', u);
+  state.banner = null; state.errors = {};
+  renderAll();
+}
+
+async function submitForm() {
+  readForm();
+  const body = { ...state.form };
+  const r = await api('POST', '/api/invoices', body);
+  if (r.ok) {
+    state.errors = {}; state.form = {};
+    state.banner = { type: 'success', text: `Invoice ${r.data.invoiceNumber} was created successfully. Status: ${r.data.status}.` };
+    state.selectedId = r.data.id;
+    if (state.ui === 'v2') state.tab = 'list';
+    state.invoices = state.invoices.filter((i) => i.id !== r.data.id).concat(r.data);
+    renderAll(true);
+    refresh();
+  } else {
+    state.errors = (r.data && r.data.errors) || {};
+    state.banner = { type: 'error', text: (r.data && r.data.error) || 'Something went wrong.' };
+    renderAll();
+  }
+}
+
+document.addEventListener('click', async (e) => {
+  const t = e.target.closest('button');
+  if (!t) return;
+  if (t.id === 'btn-v1') return setUi('v1');
+  if (t.id === 'btn-v2') return setUi('v2');
+  if (t.id === 'btn-reset') {
+    await api('POST', '/api/test/reset');
+    state.invoices = []; state.selectedId = null; state.banner = null; state.errors = {}; state.form = {};
+    $('demo-msg').textContent = 'Test data was reset.';
+    setTimeout(() => { $('demo-msg').textContent = ''; }, 3000);
+    renderAll(true);
+    return;
+  }
+  if (t.dataset.open) { state.selectedId = Number(t.dataset.open); renderData(); }
+  if (t.dataset.tab) { readForm(); state.tab = t.dataset.tab; state.banner = null; state.errors = {}; renderAll(); }
+  if (t.id === 'close-details') { state.selectedId = null; renderData(); }
+});
+document.addEventListener('submit', (e) => { e.preventDefault(); submitForm(); });
+
+// ---------- start ----------
+(function init() {
+  let ui = new URL(location.href).searchParams.get('ui');
+  if (ui !== 'v1' && ui !== 'v2') { try { ui = localStorage.getItem('ui'); } catch (e) {} }
+  state.ui = ui === 'v2' ? 'v2' : 'v1';
+  renderAll();
+  refresh();
+})();
+</script>
+</body>
+</html>
