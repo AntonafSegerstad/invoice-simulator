@@ -47,6 +47,11 @@ Optional: `PORT`, `DATA_DIR`. Open `/?ui=v2` to start in V2.
 
 Switch with the **UI Version V1/V2** control in the yellow "Demo controls" bar (choice is kept on refresh).
 
+## Evidence of which UI was used
+- The demo bar shows `Active UI: V1/V2` (also `data-ui` on `<body>`, `data-testid="active-ui"`).
+- Each invoice has `createdVia`: `V1` or `V2` if created through the UI (UI sends header `X-Client-UI`), `API` otherwise.
+- Not tamper-proof: a script can send the header itself. Fine for a demo.
+
 ## 7. Reset test data
 Click **Reset test data** in the Demo controls bar, or `curl -X POST <url>/api/test/reset`.
 

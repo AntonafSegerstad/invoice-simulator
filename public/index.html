@@ -83,6 +83,7 @@
     </span>
   </span>
   <button id="btn-reset" class="reset" type="button">Reset test data</button>
+  <strong id="active-ui" data-testid="active-ui"></strong>
   <span id="demo-msg" role="status"></span>
 </div>
 <div id="root"></div>
@@ -100,7 +101,7 @@ const badge = (s) => `<span class="badge ${s}">${s}</span>`;
 const sel = () => state.invoices.find((i) => i.id === state.selectedId);
 
 async function api(method, url, body) {
-  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'X-Client-UI': state.ui.toUpperCase() }, body: body ? JSON.stringify(body) : undefined });
   let data = null;
   try { data = await res.json(); } catch (e) {}
   return { ok: res.ok, status: res.status, data };
@@ -160,7 +161,7 @@ function detailsV1() {
   if (!i) return '<p class="empty">Click an invoice number in the list to see its details.</p>';
   return `<dl><dt>Invoice number</dt><dd>${esc(i.invoiceNumber)}</dd><dt>Customer</dt><dd>${esc(i.customer)}</dd>
     <dt>Amount</dt><dd>${money(i.amount)}</dd><dt>Currency</dt><dd>${i.currency}</dd><dt>Due date</dt><dd>${esc(i.dueDate)}</dd>
-    <dt>Status</dt><dd>${badge(i.status)}</dd></dl>`;
+    <dt>Status</dt><dd>${badge(i.status)}</dd><dt>Created via</dt><dd>${i.createdVia}</dd></dl>`;
 }
 
 // ---------- V2 layout ----------
@@ -201,7 +202,7 @@ function detailsV2() {
   return `<aside class="drawer" aria-label="Invoice details"><button class="btn secondary close" type="button" id="close-details">Close</button>
     <h2>Invoice ${esc(i.invoiceNumber)}</h2>
     ${item('Status', badge(i.status))}${item('Client', esc(i.customer))}${item('Invoice #', esc(i.invoiceNumber))}
-    ${item('Amount', money(i.amount) + ' ' + i.currency)}${item('Payment due by', esc(i.dueDate))}</aside>`;
+    ${item('Created via', i.createdVia)}${item('Amount', money(i.amount) + ' ' + i.currency)}${item('Payment due by', esc(i.dueDate))}</aside>`;
 }
 
 // ---------- rendering ----------
@@ -219,6 +220,8 @@ function renderData() {
 function renderAll(skipRead) {
   if (!skipRead) readForm();
   $('root').innerHTML = state.ui === 'v1' ? shellV1() : shellV2();
+  $('active-ui').textContent = 'Active UI: ' + state.ui.toUpperCase();
+  document.body.dataset.ui = state.ui;
   $('btn-v1').setAttribute('aria-pressed', state.ui === 'v1');
   $('btn-v2').setAttribute('aria-pressed', state.ui === 'v2');
   renderData();

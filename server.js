@@ -40,7 +40,7 @@ function view(inv) {
   return {
     id: inv.id, customer: inv.customer, invoiceNumber: inv.invoiceNumber,
     amount: inv.amount, currency: inv.currency, dueDate: inv.dueDate,
-    status: statusOf(inv), createdAt: new Date(inv.createdAt).toISOString()
+    createdVia: inv.createdVia || 'API', status: statusOf(inv), createdAt: new Date(inv.createdAt).toISOString()
   };
 }
 
@@ -103,7 +103,10 @@ app.post('/api/invoices', (req, res) => {
     const msg = `Invoice number ${values.invoiceNumber} already exists.`;
     return res.status(409).json({ error: msg, errors: { invoiceNumber: msg } });
   }
-  const inv = { id: nextId++, ...values, createdAt: Date.now() };
+  // UI sends header X-Client-UI (V1/V2). Anything else (curl, scripts) is recorded as API.
+  const ui = String(req.get('X-Client-UI') || '').toUpperCase();
+  const createdVia = ui === 'V1' || ui === 'V2' ? ui : 'API';
+  const inv = { id: nextId++, ...values, createdVia, createdAt: Date.now() };
   invoices.push(inv);
   save();
   res.status(201).json(view(inv));
